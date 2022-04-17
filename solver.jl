@@ -73,35 +73,54 @@ end
 
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
-    
+    set_time_limit_sec(model, 60.0)
     CX = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
     @variable(model,carga[1:instance.n],Int)
-    M = 5000
+    M = 999999
+
+    for i in 1:instance.n
+        @constraint(model, carga[i] >= 0)
+    end
+
     @constraint(model,carga[1] <= CX - sum(traveled[1,i]*instance.demands[i] for i in 1:instance.n))
     @constraint(model,CX <=  sum(traveled[1,i]*instance.limits[i] for i in 1:instance.n))
     for i in 2: instance.n
     #@constraint(model,carga[i] <= sum(carga[x]*traveled[x,i] for x in 1:instance.n) - sum(traveled[i,x]*instance.demands[i] for x in 1:instance.n))
     #@constraint(model,sum(carga[x]*traveled[x,i] for x in 1:instance.n) <= sum(traveled[i,x]*instance.limits[i] for x in 1:instance.n))
     for y in 1:instance.n
-        @constraint(model,(carga[i] + sum(traveled[i,x]*instance.demands[i] for x in 1:instance.n)) <= (carga[y] + M*(1-traveled[y,i])))
-        @constraint(model,carga[y] - M*(1-traveled[y,i]) <= sum(traveled[i,x]*instance.limits[i] for x in 1:instance.n))
+        #@constraint(model,(carga[i] + sum(traveled[i,x]*instance.demands[i] for x in 1:instance.n)) <= (carga[y] + M*(1-traveled[y,i])))
+        #@constraint(model,carga[y] + M*(1-traveled[y,i]) <= sum(traveled[i,x]*instance.limits[i] for x in 1:instance.n))
+        @constraint(model,carga[i] <= carga[i-1] - sum(traveled[y,x]*instance.demands[x] for x in 1:instance.n))
+        @constraint(model,carga[i-1] <= sum(traveled[y,x]*instance.limits[x] for x in 1:instance.n))
     end 
 
+  
+    # calabresa
     end
 
     @constraint(model, sum(traveled[i,i] for i in 1:instance.n) <= 0)
     for i in 1: instance.n
     @constraint(model, sum(traveled[i,j] for j in 1:instance.n) <= 1)
     @constraint(model, sum(traveled[j,i] for j in 1:instance.n) <= 1)
+
+    @constraint(model, sum(traveled[i,j] for j in 1:instance.n) >= 1)
+    @constraint(model, sum(traveled[j,i] for j in 1:instance.n) >= 1)
     end
 
-    @objective(model,Min,sum(instance.distances[i,[j]]*traveled[i,j] for i in 1:instance.n for j in 1:instance.n))
+    @objective(model,Min,sum(instance.distances[i][j]*traveled[i,j] for i in 1:instance.n for j in 1:instance.n))
 
     optimize!(model)
 
-    @show objective_value(model)
-    return [0, true]
+    @show objective_value(model) 
+    for i in 1:instance.n
+        for j in 1:instance.n
+            print(value(traveled[j,i]), " ")
+        end
+        println()
+    end
+    println(value.(carga))
+    return [objective_value(model), true]
 end
 
 function solve_metaheuristic(instance :: Instance) 
