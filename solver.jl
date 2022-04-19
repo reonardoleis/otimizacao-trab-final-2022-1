@@ -74,41 +74,24 @@ end
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
     set_time_limit_sec(model, 60.0)
-    CX = sum(instance.demands)
+    CargaInicial = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
     @variable(model,carga[1:instance.n],Int)
     @variable(model,p[1:instance.n],Int)
-    M = instance.n
-    println(CX)
-    for i in 1:instance.n
+    M = 999999
+    for i in 2:instance.n
         @constraint(model, carga[i] >= 0)
-        @constraint(model,p[i] >= 0)
     end
-   
-    @constraint(model,p[1] <= 0)
+    @constraint(model,carga[1] >= CargaInicial)
+    @constraint(model,carga[1] <= CargaInicial)
     for i in 1:instance.n
         for j in 2:instance.n 
-           @constraint(model,(p[i] + (M*(traveled[i,j]-1)) + 1<=p[j] ))
+           @constraint(model,(carga[i] + (M*(1-traveled[i,j])) - instance.demands[i] >=carga[j] ))
+           @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=carga[j] ))
+           @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=instance.limits[j]))
         end
     end
     
-   # @constraint(model,carga[1] <= CX - sum(traveled[1,i]*instance.demands[i] for i in 1:instance.n))
-    #@constraint(model,carga[1] >= CX - sum(traveled[1,i]*instance.demands[i] for i in 1:instance.n))
-   # @constraint(model,CX <=  sum(traveled[1,i]*instance.limits[i] for i in 1:instance.n))
-    #@constraint(model,CX >=  sum(traveled[1,i]*instance.limits[i] for i in 1:instance.n))
-
-    for i in 2: (instance.n)
-    #@constraint(model,carga[i] <= sum(carga[x]*traveled[x,i] for x in 1:instance.n) - sum(traveled[i,x]*instance.demands[i] for x in 1:instance.n))
-    #@constraint(model,sum(carga[x]*traveled[x,i] for x in 1:instance.n) <= sum(traveled[i,x]*instance.limits[i] for x in 1:instance.n))
-    for y in 1:instance.n
-        #@constraint(model,(carga[i] + sum(traveled[i,x]*instance.demands[i] for x in 1:instance.n)) <= (carga[y] + M*(1-traveled[y,i])))
-        #@constraint(model,carga[y] + M*(1-traveled[y,i]) <= sum(traveled[i,x]*instance.limits[i] for x in 1:instance.n))
-        #@constraint(model,carga[i] <= carga[i-1] - sum(traveled[i,x]*instance.demands[x] for x in 1:instance.n))
-        #@constraint(model,carga[i] >= carga[i-1] - sum(traveled[i,x]*instance.demands[x] for x in 1:instance.n))
-        #@constraint(model,carga[i-1] <= sum(traveled[i,x]*instance.limits[x] for x in 1:instance.n))
-        #@constraint(model,carga[i-1] >= sum(traveled[i,x]*instance.limits[x] for x in 1:instance.n))
-    end 
-    end
 
     @constraint(model, sum(traveled[i,i] for i in 1:instance.n) <= 0)
     for i in 1: instance.n
@@ -123,7 +106,6 @@ function solve_linnear_programming(instance :: Instance)
 
     optimize!(model)
     @show objective_value(model) 
-    @show value.(p)
     for i in 1:instance.n
         for j in 1:instance.n
             print(value(instance.distances[i][j]*traveled[i,j]), " ")
@@ -134,6 +116,7 @@ function solve_linnear_programming(instance :: Instance)
         println()
     end
     println(value.(carga))
+    println(value.(instance.limits))
     return [objective_value(model), true]
 end
 
