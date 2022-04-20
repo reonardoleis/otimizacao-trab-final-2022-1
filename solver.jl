@@ -72,12 +72,14 @@ end
 
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
-    set_time_limit_sec(model, 20.0)
+    set_time_limit_sec(model, 200)
     CargaInicial = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
     @variable(model,carga[1:instance.n],Int)
     @variable(model,p[1:instance.n],Int)
-    M = 999999999
+    M = CargaInicial + 1
+   
+    
     for i in 2:instance.n
         @constraint(model, carga[i] >= 0)
     end
@@ -107,15 +109,13 @@ function solve_linnear_programming(instance :: Instance)
     @show objective_value(model) 
     for i in 1:instance.n
         for j in 1:instance.n
-            print(value(instance.distances[i][j]*traveled[i,j]), " ")
+            #print(value(instance.distances[i][j]*traveled[i,j]), " ")
             
         end
-        println()
         
-        println()
     end
-    println(value.(carga))
-    println(value.(instance.limits))
+    #println(value.(carga))
+    #println(value.(instance.limits))
     return [objective_value(model), true]
 end
 
