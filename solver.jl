@@ -63,7 +63,6 @@ function run_all_instances()
         lps = solve_linnear_programming(instance)
         mhs = solve_metaheuristic(instance)
         output_results = string(output_results, "\n", replace(instance_display_name, ".dat" => ""), ",", instance.n, ",", lps[1], ",", lps[2], ",", mhs[1], ",", mhs[2])
-        break
     end
 
     open(replace(string("results_", now(), ".csv"), ":" => ""), "w") do f 
@@ -73,12 +72,12 @@ end
 
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
-    set_time_limit_sec(model, 60.0)
+    set_time_limit_sec(model, 20.0)
     CargaInicial = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
     @variable(model,carga[1:instance.n],Int)
     @variable(model,p[1:instance.n],Int)
-    M = 999999
+    M = 999999999
     for i in 2:instance.n
         @constraint(model, carga[i] >= 0)
     end
