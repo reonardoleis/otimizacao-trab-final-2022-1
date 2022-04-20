@@ -52,7 +52,7 @@ function read_instance(filepath :: String)
 end
 
 function run_all_instances()
-    output_results = "instance_name,n,linnear_bkv,linnear_opt,metaheurisitc_bvk,metaheurisitc_opt"
+    output_results = "instance_name,n,linnear_bkv,found_linnear_value,metaheurisitc_bvk,found_metaheurisitc_value"
     for instance_filepath in instances
         instance_display_name = replace(instance_filepath, "./instancias\\" => "")
         if instance_display_name == "resultados.dat"
@@ -72,14 +72,13 @@ end
 
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
-    set_time_limit_sec(model, 200)
+    set_time_limit_sec(model, 1800)
     CargaInicial = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
     @variable(model,carga[1:instance.n],Int)
     @variable(model,p[1:instance.n],Int)
     M = CargaInicial + 1
    
-    
     for i in 2:instance.n
         @constraint(model, carga[i] >= 0)
     end
@@ -91,32 +90,22 @@ function solve_linnear_programming(instance :: Instance)
            @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=carga[j] ))
            @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=instance.limits[j]))
         end
-    end
-    
-
+        @constraint(model, sum(traveled[i,j] for j in 1:instance.n) <= 1)
+        @constraint(model, sum(traveled[j,i] for j in 1:instance.n) <= 1)
+        @constraint(model, sum(traveled[i,j] for j in 1:instance.n) >= 1)
+        @constraint(model, sum(traveled[j,i] for j in 1:instance.n) >= 1)
+    end  
     @constraint(model, sum(traveled[i,i] for i in 1:instance.n) <= 0)
-    for i in 1: instance.n
-    @constraint(model, sum(traveled[i,j] for j in 1:instance.n) <= 1)
-    @constraint(model, sum(traveled[j,i] for j in 1:instance.n) <= 1)
-
-    @constraint(model, sum(traveled[i,j] for j in 1:instance.n) >= 1)
-    @constraint(model, sum(traveled[j,i] for j in 1:instance.n) >= 1)
-    end
 
     @objective(model,Min,sum(instance.distances[i][j]*traveled[i,j] for i in 1:instance.n for j in 1:instance.n))
 
     optimize!(model)
+
+    if has_values(model)
     @show objective_value(model) 
-    for i in 1:instance.n
-        for j in 1:instance.n
-            #print(value(instance.distances[i][j]*traveled[i,j]), " ")
-            
-        end
-        
-    end
-    #println(value.(carga))
-    #println(value.(instance.limits))
     return [objective_value(model), true]
+    end
+    return [0,false]
 end
 
 function solve_metaheuristic(instance :: Instance) 
