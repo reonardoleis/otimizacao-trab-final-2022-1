@@ -1,5 +1,6 @@
-Otimização Combinatório: Trabalho Final
-Leonardo R. S. e Bruno C. S.
+# Trabalho Final de Otimização Combinatória (2022/1)
+## TSP modificado utilizando Simulated Annealing (problema 2)
+### Leonardo R. S. e Bruno C. S.
 
 Programação linear em Julia/JuMP (pasta programacao-linear):
 
