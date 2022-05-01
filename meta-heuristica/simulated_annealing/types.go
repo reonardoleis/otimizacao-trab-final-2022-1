@@ -6,33 +6,38 @@ import (
 )
 
 type SimulatedAnnealingInstance struct {
-	ProblemInstance models.Instance
-	Solution        *Solution
-	Solved          bool
-	Points          plotter.XYs
+	ProblemInstance  models.Instance
+	Solution         *Solution
+	Solved           bool
+	Points           plotter.XYs
+	MetropolisPoints plotter.XYs
+	SolutionsVisited [][]int
 }
 
 type Solution struct {
-	BKV       int64
-	WalkOrder []int
+	TraveledDistance int64
+	WalkOrder        []int
 }
 
 type SimulatedAnnealingParams struct {
-	T0    int
-	TF    float32
-	P     int
-	L     int
-	Alpha float32
+	T0              int
+	TF              float32
+	P               int
+	MaxAcceptances  int
+	MetropolisLimit int
+	Alpha           float32
 }
 
 func NewSimulatedAnnealingInstance(problemInstance models.Instance) SimulatedAnnealingInstance {
 	return SimulatedAnnealingInstance{
 		ProblemInstance: problemInstance,
 		Solution: &Solution{
-			BKV:       0,
-			WalkOrder: []int{},
+			TraveledDistance: 0,
+			WalkOrder:        []int{},
 		},
-		Solved: false,
-		Points: make(plotter.XYs, 0),
+		Solved:           false,
+		Points:           make(plotter.XYs, 0),
+		MetropolisPoints: make(plotter.XYs, 0),
+		SolutionsVisited: [][]int{},
 	}
 }
