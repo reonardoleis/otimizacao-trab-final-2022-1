@@ -52,7 +52,7 @@ function read_instance(filepath :: String)
 end
 
 function run_all_instances()
-    output_results = "instance_name,n,linnear_bkv,found_linnear_value,metaheurisitc_bvk,found_metaheurisitc_value"
+    output_results = "instance_name,n,linnear_bkv,found_linnear_value"
     for instance_filepath in instances
         instance_display_name = replace(instance_filepath, "./instancias\\" => "")
         if instance_display_name == "resultados.dat"
@@ -61,8 +61,7 @@ function run_all_instances()
         println("Running instance ", instance_display_name)
         instance = read_instance(instance_filepath)
         lps = solve_linnear_programming(instance)
-        mhs = solve_metaheuristic(instance)
-        output_results = string(output_results, "\n", replace(instance_display_name, ".dat" => ""), ",", instance.n, ",", lps[1], ",", lps[2], ",", mhs[1], ",", mhs[2])
+        output_results = string(output_results, "\n", replace(instance_display_name, ".dat" => ""), ",", instance.n, ",", lps[1], ",", lps[2])
     end
 
     open(replace(string("results_", now(), ".csv"), ":" => ""), "w") do f 
@@ -72,23 +71,22 @@ end
 
 function solve_linnear_programming(instance :: Instance) 
     model = Model(GLPK.Optimizer)
-    set_time_limit_sec(model, 1800)
-    CargaInicial = sum(instance.demands)
+    set_time_limit_sec(model, 60)
+    initialLoad = sum(instance.demands)
     @variable(model,traveled[1:instance.n,1:instance.n],Bin)
-    @variable(model,carga[1:instance.n],Int)
-    @variable(model,p[1:instance.n],Int)
-    M = CargaInicial + 1
+    @variable(model,load[1:instance.n],Int)
+    M = initialLoad + 1
    
     for i in 2:instance.n
-        @constraint(model, carga[i] >= 0)
+        @constraint(model, load[i] >= 0)
     end
-    @constraint(model,carga[1] >= CargaInicial)
-    @constraint(model,carga[1] <= CargaInicial)
+    @constraint(model,load[1] >= initialLoad)
+    @constraint(model,load[1] <= initialLoad)
     for i in 1:instance.n
         for j in 2:instance.n 
-           @constraint(model,(carga[i] + (M*(1-traveled[i,j])) - instance.demands[i] >=carga[j] ))
-           @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=carga[j] ))
-           @constraint(model,(carga[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=instance.limits[j]))
+           @constraint(model,(load[i] + (M*(1-traveled[i,j])) - instance.demands[i] >=load[j] ))
+           @constraint(model,(load[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=load[j] ))
+           @constraint(model,(load[i] + (M*(traveled[i,j]-1)) - instance.demands[i] <=instance.limits[j]))
         end
         @constraint(model, sum(traveled[i,j] for j in 1:instance.n) <= 1)
         @constraint(model, sum(traveled[j,i] for j in 1:instance.n) <= 1)
@@ -108,8 +106,5 @@ function solve_linnear_programming(instance :: Instance)
     return [0,false]
 end
 
-function solve_metaheuristic(instance :: Instance) 
-    return [0, true]
-end
 
 run_all_instances()
